@@ -23,6 +23,18 @@
 (() => {
   'use strict';
 
+// ====================================================================
+// 0) ANIMACIÓN DE ENTRADA GLOBAL
+// ====================================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Pequeño retardo para permitir que la app-container esté renderizada
+  setTimeout(() => {
+    document.body.classList.add('loaded');
+  }, 50);
+});
+
+
   // ====================================================================
   // 1) SELECTORES Y CONSTANTES
   // ====================================================================
