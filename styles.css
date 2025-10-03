@@ -180,6 +180,17 @@ input.invalid, select.invalid {
 }
 
 /* ----------------- Modo claro con alto contraste ----------------- */
+/* ======================= 🌑 Corrección select modo oscuro ======================= */
+select option {
+  background: #0b1220; /* fondo oscuro */
+  color: #f8fafc;     /* texto claro */
+}
+
+body.light-mode select option {
+  background: #f7fafc; /* fondo claro */
+  color: #0f172a;     /* texto oscuro */
+}
+
 body.light-mode {
   --bg: #f7fafc;
   --fg: #0f172a;
@@ -231,3 +242,16 @@ body.light-mode .toast { background: #111827; color:#f9fafb; }
   font-weight: 700;
   box-shadow: 0 4px 16px rgba(185,28,28,.35);
 }
+
+/* ======================= 🌟 Animación global al cargar ======================= */
+.app-container {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+body.loaded .app-container {
+  opacity: 1;
+  transform: translateY(0);
+}
+/* =================================================================== */
