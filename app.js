@@ -429,13 +429,51 @@
   };
 
   // Escuchamos tanto 'input' como 'change' para máxima cobertura
-  [UI.difficulty, UI.timeInput, UI.rows, UI.cols].forEach((el) => {
-    if (!el) return;
-    el.addEventListener('input', midGameGuard, true);
-    el.addEventListener('change', midGameGuard, true);
-  });
+  
+  // ================================================================
+  // 10.2) FIX TEMPORAL — Inputs/Select legibles en modo oscuro (Rodrigo)
+  // ================================================================
+  const fixDarkModeInputs = () => {
+    const inputs = [UI.rows, UI.cols, UI.timeInput, UI.difficulty].filter(Boolean);
+    inputs.forEach(input => {
+      input.addEventListener('focus', () => {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const darkModeActive = document.body.classList.contains('light-mode') ? false : prefersDark;
+        if (darkModeActive) {
+          input.style.color = '#003366'; // Azul oscuro visible
+          input.style.backgroundColor = '#ffffff';
+          input.style.outline = '2px solid #0056b3';
+        }
+      });
 
-  // 11) ARRANQUE
-  // ====================================================================
-  buildGrid();
+      input.addEventListener('blur', () => {
+        input.style.color = '';
+        input.style.backgroundColor = '';
+        input.style.outline = '';
+      });
+    });
+  };
+
+  fixDarkModeInputs();
+
+// 11) ARRANQUE
+// ====================================================================
+
+// 👇 Animación inicial global al cargar (Rodrigo)
+document.addEventListener('DOMContentLoaded', () => {
+  // Estado inicial invisible
+  document.body.style.opacity = '0';
+  document.body.style.transform = 'translateY(10px)';
+  document.body.style.transition = 'opacity 0.8s ease-out, transform 0.8s ease-out';
+
+  // Disparo con pequeño retraso para efecto suave
+  setTimeout(() => {
+    document.body.style.opacity = '1';
+    document.body.style.transform = 'translateY(0)';
+    document.body.classList.add('visible'); // para que Walter pueda usar CSS también
+  }, 100);
+});
+
+// Construcción inicial de la grilla
+buildGrid();
 })();
