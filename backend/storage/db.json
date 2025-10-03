@@ -1,0 +1,33 @@
+{
+  "perfiles": [
+    {
+      "id": "12d6f87e-c977-4c89-bc01-6104bedad681",
+      "username": "Junior",
+      "email": "junior@example.com",
+      "avatar": "",
+      "preferences": {
+        "difficulty": "normal",
+        "sound": true
+      },
+      "stats": {
+        "gamesPlayed": 1,
+        "wins": 1,
+        "losses": 0,
+        "totalScore": 200,
+        "bestStreak": 1
+      },
+      "history": [
+        {
+          "id": "5276aaf9-fe0d-41a8-8570-104e96fa13d7",
+          "date": "2025-10-03T18:13:03.252864+00:00",
+          "score": 200,
+          "result": "win",
+          "level": 3,
+          "durationSec": 120
+        }
+      ],
+      "createdAt": "2025-10-03T18:08:39.465149+00:00",
+      "updatedAt": "2025-10-03T18:13:03.252875+00:00"
+    }
+  ]
+}
