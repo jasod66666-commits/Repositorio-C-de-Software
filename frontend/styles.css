@@ -7,8 +7,8 @@
   --bg: #0b1220;
   --fg: #f8fafc;
   --muted: #cbd5e1;
-  --primary: #7dd3fc;  /* celeste */
-  --accent: #f472b6;   /* rosado */
+  --primary: #7dd3fc;
+  --accent: #f472b6;
   --panel: #0f172a;
   --grid-line: rgba(255,255,255,.09);
   --cols: 8;
@@ -18,7 +18,7 @@
 body { margin:0; background:var(--bg); color:var(--fg); font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, 'Apple Color Emoji','Segoe UI Emoji'; }
 .app-container { width:min(1200px, 96%); margin: 18px auto; }
 
-/* ----------------- Barra superior ----------------- */
+/* Barra superior */
 .brand-title {
   margin: 0;
   font-size: clamp(28px, 5vw, 44px);
@@ -34,22 +34,22 @@ body { margin:0; background:var(--bg); color:var(--fg); font-family: system-ui, 
   gap:12px; align-items:center; margin-bottom: 16px;
 }
 .actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.actions .btn, .actions .btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  line-height: 1;
+  padding: 8px 12px;
+  border-radius: 9999px;
+}
+
 .btn { background:var(--primary); color:#00121a; border:0; padding:10px 14px; border-radius:12px; font-weight:700; cursor:pointer; }
 .btn:hover { filter: brightness(1.05); }
 .btn-ghost { background:transparent; border:1px solid var(--grid-line); color:var(--fg); }
 
-/* ----------------- Paneles y grid ----------------- */
-.layout {
-  display:grid;
-  grid-template-columns: 280px 1fr 280px;
-  gap: 16px;
-}
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--grid-line);
-  border-radius: 14px;
-  padding: 14px;
-}
+/* Paneles y grid */
+.layout { display:grid; grid-template-columns: 280px 1fr 280px; gap: 16px; }
+.panel { background: var(--panel); border: 1px solid var(--grid-line); border-radius: 14px; padding: 14px; }
 .panel h2, .panel h3 { margin: 8px 0 10px; }
 .form-row { display:flex; flex-direction:column; gap:6px; margin: 6px 0; }
 .form-row input, .form-row select {
@@ -95,8 +95,12 @@ body { margin:0; background:var(--bg); color:var(--fg); font-family: system-ui, 
 .light-mode .cell { background:#fff; }
 .light-mode .form-row input, .light-mode .form-row select { background:#fff; color:#0b1220; }
 
-/* -------- Nuevos estilos de integración backend -------- */
+/* Integración backend */
 .btn-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
 .divider { border:0; border-top:1px solid var(--grid-line); margin:12px 0; }
 .leaderboard { margin:6px 0; padding-left: 1.25rem; }
 .stats-box > div { margin: 2px 0; }
+
+/* Botón eliminar */
+.btn.danger { background:#e63946; color:#fff; border:none; }
+.btn.danger:hover { background:#c1121f; }
