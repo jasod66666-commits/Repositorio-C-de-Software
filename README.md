@@ -4,9 +4,9 @@
 
 | Apellidos y Nombres | Código | Rol |
 |----------------------|---------|------|
-| **Rodrigo Gutiérrez Lazo** | 74853219 | 🧠 Desarrollador principal — Backend y Servicios Flask |
-| Jorge Roland Gutiérrez Loyola | 71598462 | 🎨 Mejoras y ajustes en la interfaz (HTML, CSS, JS) |
-| Walter Omar Ruiz Garagundo | 72645193 | 🧾 Documentación, pruebas y soporte funcional |
+| **Rodrigo Gutiérrez Lazo** | 73247464 | 🧠 Desarrollador principal — Backend y Servicios Flask |
+| Jorge Roland Gutiérrez Loyola | 73050522 | 🎨 Mejoras y ajustes en la interfaz (HTML, CSS, JS) |
+| Walter Omar Ruiz Garagundo | 73025039 | 🧾 Documentación, pruebas y soporte funcional |
 
 ---
 
