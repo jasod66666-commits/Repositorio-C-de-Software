@@ -23,23 +23,25 @@
 (() => {
   'use strict';
 
-// ====================================================================
-// 0) ANIMACIÓN DE ENTRADA GLOBAL
-// ====================================================================
+  // ====================================================================
+  // 0) ANIMACIÓN DE ENTRADA GLOBAL
+  // ====================================================================
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Pequeño retardo para permitir que la app-container esté renderizada
-  setTimeout(() => {
-    document.body.classList.add('loaded');
-  }, 50);
-});
-
+  document.addEventListener('DOMContentLoaded', () => {
+    document.body.style.opacity = '0';
+    document.body.style.transform = 'translateY(10px)';
+    document.body.style.transition = 'opacity 0.8s ease-out, transform 0.8s ease-out';
+    setTimeout(() => {
+      document.body.style.opacity = '1';
+      document.body.style.transform = 'translateY(0)';
+      document.body.classList.add('visible');
+    }, 100);
+  });
 
   // ====================================================================
   // 1) SELECTORES Y CONSTANTES
   // ====================================================================
 
-  /** Elementos de UI */
   const UI = {
     grid: document.getElementById('grid'),
     score: document.getElementById('score'),
@@ -57,17 +59,25 @@ document.addEventListener('DOMContentLoaded', () => {
     historyList: document.getElementById('historyList'),
   };
 
-  /** Límites (móvil vs escritorio) */
-  const LIMIT = window.matchMedia('(max-width: 768px)').matches ? 6 : 15;
-
-  /** Intervalos de salto por dificultad (ms) */
-  const DIFFICULTY_INTERVALS = {
-    easy:   [900, 1400],
-    medium: [650, 1000],
-    hard:   [380, 650],
+  const UI2 = {
+    profileSelect: document.getElementById('profileSelect'),
+    username: document.getElementById('username'),
+    email: document.getElementById('email'),
+    avatar: document.getElementById('avatar'),
+    createProfileBtn: document.getElementById('createProfileBtn'),
+    savePrefsBtn: document.getElementById('savePrefsBtn'),
+    deleteProfileBtn: document.getElementById('deleteProfileBtn'),
+    profileStatus: document.getElementById('profileStatus'),
+    leaderboard: document.getElementById('leaderboard'),
+    apiBase: document.getElementById('apiBase'),
+    statsBox: document.getElementById('statsBox'),
   };
 
-  /** Estado global del juego */
+  // ====================================================================
+  // 2) ESTADO GLOBAL
+  // ====================================================================
+
+  const LIMIT = 15;
   const State = {
     rows: 6,
     cols: 8,
@@ -77,278 +87,337 @@ document.addEventListener('DOMContentLoaded', () => {
     currentIndex: -1,
     timers: { tick: null, next: null },
     history: [],
+    profileId: localStorage.getItem('profileId') || null,
+    apiBase: localStorage.getItem('apiBase') || 'http://localhost:5000',
   };
 
-  // Pista visual de límites máximos
-  UI.maxHint.textContent = `Máximo recomendado: ${LIMIT}×${LIMIT}`;
+  UI2.apiBase && (UI2.apiBase.value = State.apiBase);
+  const DIFF_TO_LEVEL = { easy: 1, medium: 2, hard: 3 };
 
   // ====================================================================
-  // 2) UTILIDADES GENERALES
+  // 3) FUNCIONES AUXILIARES
   // ====================================================================
 
-  /** Número entero aleatorio en [0..n-1] */
   const rnd = (n) => Math.floor(Math.random() * n);
-
-  /** Hora local amigable (para historial) */
   const nowTime = () => new Date().toLocaleTimeString();
 
-  /** Muestra un toast (mensaje breve no bloqueante) */
   function toast(msg) {
     const el = document.createElement('div');
     el.className = 'toast';
     el.textContent = msg;
     document.body.appendChild(el);
-    setTimeout(() => el.remove(), 2500);
+    setTimeout(() => el.remove(), 2200);
   }
 
-  // ====================================================================
-  // 3) Burbujas (tooltips) para validación y avisos
-  // ====================================================================
-
-  /**
-   * Crea un globo de texto temporal cerca de un elemento.
-   * @param {HTMLElement} target - Elemento de referencia.
-   * @param {string} text - Mensaje a mostrar.
-   * @param {number} [offsetY=-10] - Desplazamiento vertical relativo.
-   */
-  function showBubble(target, text, offsetY = -10) {
-    const rect = target.getBoundingClientRect();
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble';
-    bubble.textContent = text;
-    document.body.appendChild(bubble);
-
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + window.scrollY + offsetY;
-    bubble.style.left = x + 'px';
-    bubble.style.top = (y + window.scrollY) + 'px';
-
-    setTimeout(() => bubble.remove(), 2500);
-  }
-
-  // ====================================================================
-  // 4) Validación de entradas (permisiva)
-  // ====================================================================
-
-  /**
-   * Extrae el primer grupo de dígitos de una cadena.
-   * Permite letras; si no hay dígitos, retorna NaN.
-   */
   function parseNumeric(value) {
     const match = String(value).match(/\d+/);
     return match ? parseInt(match[0], 10) : NaN;
   }
 
-  /**
-   * Valida un input numérico contra [min, max].
-   * - Permite letras: intenta extraer dígitos.
-   * - Si es inválido, añade clase .invalid, actualiza errBox y muestra burbuja.
-   * @returns {{ok:boolean, value?:number}}
-   */
+  // ====================================================================
+  // 4) VALIDACIÓN DE CAMPOS
+  // ====================================================================
+
+  function showError(input, message) {
+    const span = document.createElement('span');
+    span.className = 'bubble';
+    span.textContent = message;
+    input.after(span);
+    setTimeout(() => span.remove(), 1600);
+  }
+
   function validateField(input, min, max) {
-    const v = parseNumeric(input.value);
-    if (Number.isNaN(v) || v < min || v > max) {
-      input.classList.add('invalid');
-      UI.errBox.textContent = `Debe ser un número entre ${min} y ${max}.`;
-      showBubble(input, 'Valor inválido 😅');
+    const value = parseNumeric(input.value);
+    if (isNaN(value) || value < min || value > max) {
+      showError(input, `Usa números entre ${min} y ${max}`);
+      input.focus();
       return { ok: false };
     }
-    input.classList.remove('invalid');
-    UI.errBox.textContent = '';
-    return { ok: true, value: v };
+    return { ok: true, value };
   }
 
   // ====================================================================
-  // 5) Construcción de grilla
+  // 5) API BACKEND
   // ====================================================================
 
-  /** Limpia el contenido del contenedor de la grilla. */
-  function clearGrid() {
-    UI.grid.innerHTML = '';
+async function api(path, options = {}) {
+  const base = (UI2.apiBase && UI2.apiBase.value) || State.apiBase || 'http://localhost:5000';
+  const url = base.replace(/\/$/, '') + path;
+  const opts = { headers: { 'Content-Type': 'application/json' }, ...options };
+  const res = await fetch(url, opts);
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '');
+    throw new Error(`${res.status} ${res.statusText}: ${txt}`);
   }
 
-  /**
-   * Construye la grilla según State.rows × State.cols.
-   * - Añade manejadores de click y teclado por celda.
-   * - Si el juego no ha iniciado, muestra burbuja invitando a iniciar.
-   */
+  // 🔧 Manejo robusto: si no hay cuerpo (DELETE 204 o 200 sin JSON), no intentes parsear JSON
+  const text = await res.text().catch(() => '');
+  if (!text) return null;
+  try { return JSON.parse(text); } catch { return text; }
+}
+
+async function loadProfiles() {
+  try {
+    const list = await api('/api/perfiles');
+    if (UI2.profileSelect) {
+      // 🔹 Limpia las opciones y agrega la opción por defecto
+      UI2.profileSelect.innerHTML = '<option value="">— nuevo —</option>';
+
+      // 🔹 Agrega las opciones con value = ID
+      list.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;  // ✅ solo el ID, no el objeto completo
+        opt.textContent = `${p.username} · ${p.email}`;
+        UI2.profileSelect.appendChild(opt);
+      });
+
+      // 🔹 Si hay un perfil activo en memoria, selecciónalo
+      if (State.profileId) {
+        UI2.profileSelect.value = State.profileId;
+        const p = list.find(x => x.id === State.profileId);
+        if (p) fillProfileForm(p);
+      }
+    }
+  } catch (e) {
+    toast('⚠️ No se pudo cargar perfiles. Verifica el backend.');
+    console.error(e);
+  }
+}
+
+  async function loadLeaderboard() {
+    try {
+      const top = await api('/api/leaderboard');
+      UI2.leaderboard.innerHTML = '';
+      top.forEach((row, i) => {
+        const li = document.createElement('li');
+        li.textContent = `#${i + 1} ${row.username} — ${row.totalScore}`;
+        UI2.leaderboard.appendChild(li);
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function loadLeaderboard() {
+    try {
+      const top = await api('/api/leaderboard');
+      UI2.leaderboard.innerHTML = '';
+      top.forEach((row, i) => {
+        const li = document.createElement('li');
+        li.textContent = `#${i + 1} ${row.username} — ${row.totalScore}`;
+        UI2.leaderboard.appendChild(li);
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // ====================================================================
+  // Nueva función: Cargar historial del jugador
+  // ====================================================================
+
+async function loadHistory() {
+  if (!State.profileId) return;
+  try {
+    const p = await api(`/api/perfiles/${State.profileId}`);
+    const list = p.history || [];
+    UI.historyList.innerHTML = '';
+    list.forEach(item => {
+      const li = document.createElement('li');
+      li.textContent = `${item.date} — Puntaje: ${item.score}`;
+      UI.historyList.appendChild(li);
+    });
+  } catch (e) {
+    console.error('Error cargando historial:', e);
+  }
+}
+
+  // ====================================================================
+  // 6) CRUD DE PERFILES
+  // ====================================================================
+
+  function renderStats(p) {
+    if (!UI2.statsBox) return;
+    const s = p.stats || {};
+    UI2.statsBox.innerHTML = `
+      <div><strong>Juegos:</strong> ${s.gamesPlayed ?? 0}</div>
+      <div><strong>Ganadas:</strong> ${s.wins ?? 0} · <strong>Perdidas:</strong> ${s.losses ?? 0}</div>
+      <div><strong>Puntaje total:</strong> ${s.totalScore ?? 0}</div>
+      <div><strong>Mejor racha:</strong> ${s.bestStreak ?? 0}</div>
+    `;
+  }
+
+  function fillProfileForm(p) {
+    UI2.username.value = p.username || '';
+    UI2.email.value = p.email || '';
+    UI2.avatar.value = p.avatar || '';
+    if (p.preferences?.difficulty) UI.difficulty.value = p.preferences.difficulty;
+    renderStats(p);
+  }
+
+  async function createOrUpdateProfile() {
+    const body = {
+      username: UI2.username.value.trim(),
+      email: UI2.email.value.trim(),
+      avatar: UI2.avatar.value.trim() || '👾',
+      preferences: { difficulty: UI.difficulty.value || 'medium', sound: true },
+    };
+    try {
+      let data;
+      if (UI2.profileSelect.value) {
+        data = await api(`/api/perfiles/${UI2.profileSelect.value}`, { method: 'PUT', body: JSON.stringify(body) });
+      } else {
+        data = await api('/api/perfiles', { method: 'POST', body: JSON.stringify(body) });
+      }
+      State.profileId = data.id;
+      localStorage.setItem('profileId', data.id);
+      toast('✅ Perfil sincronizado');
+      await loadProfiles();
+    } catch (e) {
+      toast('❌ Error al sincronizar');
+      console.error(e);
+    }
+  }
+
+  async function savePreferencesOnly() {
+    if (!State.profileId) return toast('Selecciona un perfil primero');
+    try {
+      await api(`/api/perfiles/${State.profileId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          preferences: { difficulty: UI.difficulty.value || 'medium', sound: true },
+        }),
+      });
+      toast('Preferencias guardadas');
+    } catch (e) {
+      toast('Error al guardar preferencias');
+      console.error(e);
+    }
+  }
+
+async function deleteProfile() {
+  // toma id del state o del select (por si el state está limpio)
+  const id = (State.profileId && String(State.profileId)) || (UI2.profileSelect?.value || '').trim();
+  if (!id) {
+    toast('Selecciona un perfil.');
+    return;
+  }
+
+  const ok = confirm('¿Eliminar este perfil? Esta acción no se puede deshacer.');
+  if (!ok) return;
+
+  try {
+    await api(`/api/perfiles/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
+    toast('Perfil eliminado.');
+    // Reset estado + UI
+    State.profileId = null;
+    localStorage.removeItem('profileId');
+    if (UI2.profileSelect) UI2.profileSelect.value = '';
+    UI2.username && (UI2.username.value = '');
+    UI2.email && (UI2.email.value = '');
+    UI2.avatar && (UI2.avatar.value = '');
+    UI.difficulty && (UI.difficulty.value = 'medium');
+    UI2.statsBox && (UI2.statsBox.innerHTML = '');
+
+    await loadProfiles();
+    await loadLeaderboard();
+  } catch (e) {
+    console.error(e);
+    toast('No se pudo eliminar.');
+  }
+}
+
+  // ====================================================================
+  // 7) JUEGO
+  // ====================================================================
+
+  function cellIndex(r, c) { return r * State.cols + c; }
+
   function buildGrid() {
-    clearGrid();
+    UI.grid.innerHTML = '';
     UI.grid.style.setProperty('--cols', State.cols);
-
-    const total = State.rows * State.cols;
-    for (let i = 0; i < total; i++) {
-      const cell = document.createElement('div');
-      cell.className = 'cell normal';
-      cell.setAttribute('role', 'gridcell');
-      cell.setAttribute('tabindex', '0');
-
-      // Click/tap
-      cell.addEventListener('click', () => {
-        if (!State.running) {
-          showBubble(UI.grid, '¡Primero toca "Iniciar"! 🕹️', 10);
-          return;
-        }
-        onCellClick(i, cell);
-      });
-
-      // Teclado (Enter/Espacio)
-      cell.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          if (!State.running) {
-            showBubble(UI.grid, '¡Primero toca "Iniciar"! 🕹️', 10);
-            return;
-          }
-          onCellClick(i, cell);
-        }
-      });
-
-      UI.grid.appendChild(cell);
+    for (let r = 0; r < State.rows; r++) {
+      for (let c = 0; c < State.cols; c++) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'cell';
+        btn.addEventListener('click', () => onCellClick(cellIndex(r, c)));
+        UI.grid.appendChild(btn);
+      }
     }
   }
 
-  // ====================================================================
-  // 6) Copión (👀) y rastro
-  // ====================================================================
-
-  /** Coloca el copión (emoji 👀) en la celda indicada. */
-  function setCopionAt(idx) {
-    const cell = UI.grid.children[idx];
-    if (!cell) return;
-    cell.classList.add('copion');
-    cell.innerHTML = '<span class="emoji" aria-hidden="true">👀</span>';
-  }
-
-  /** Quita el copión de la celda indicada. */
-  function removeCopionAt(idx) {
-    const cell = UI.grid.children[idx];
-    if (!cell) return;
-    cell.classList.remove('copion');
-    cell.innerHTML = '';
-  }
-
-  /** Deja un rastro 👀 que se desvanece en 2s (animación CSS). */
-  function leaveTrailAt(idx) {
-    const cell = UI.grid.children[idx];
-    if (!cell) return;
-    const t = document.createElement('div');
-    t.className = 'trail';
-    t.textContent = '👀';
-    cell.appendChild(t);
-    setTimeout(() => t.remove(), 2000);
-  }
-
-  /** Coloca el copión en un índice aleatorio (limpia el anterior). */
-  function placeCopion() {
-    const total = State.rows * State.cols;
-    const idx = rnd(total);
-    if (State.currentIndex >= 0) removeCopionAt(State.currentIndex);
-    State.currentIndex = idx;
-    setCopionAt(idx);
-  }
-
-  /** Programa el próximo salto del copión según la dificultad activa. */
   function nextCopion() {
-    const [min, max] = DIFFICULTY_INTERVALS[UI.difficulty.value] || DIFFICULTY_INTERVALS.medium;
-    const delay = Math.floor(Math.random() * (max - min + 1)) + min;
-    placeCopion();
+    const total = State.rows * State.cols;
+    let idx;
+    do { idx = rnd(total); } while (idx === State.currentIndex);
+    State.currentIndex = idx;
+    const cells = UI.grid.querySelectorAll('.cell');
+    cells.forEach((c, i) => c.textContent = i === idx ? '👀' : '');
+    const diff = UI.difficulty.value;
+    const speed = diff === 'easy' ? 1200 : diff === 'hard' ? 600 : 900;
     clearTimeout(State.timers.next);
-    State.timers.next = setTimeout(nextCopion, delay);
+    State.timers.next = setTimeout(nextCopion, speed);
   }
 
-  // ====================================================================
-  // 7) Interacción de juego (click en celda) y tiempo
-  // ====================================================================
-
-  /**
-   * Gestiona el click en una celda del índice i.
-   * - Acierto: +1 punto, deja rastro y elimina copión.
-   * - Fallo:   -1 punto (mín 0) y parpadeo visual.
-   */
-  function onCellClick(i, cell) {
-    if (!State.running) return;
+  function onCellClick(i) {
+    if (!State.running) return toast('Presiona Iniciar');
     if (i === State.currentIndex) {
-      State.score++;
-      removeCopionAt(i);
-      leaveTrailAt(i);
-      State.currentIndex = -1;
+      State.score += 10;
+      UI.score.textContent = State.score;
+      nextCopion();
     } else {
-      State.score = Math.max(0, State.score - 1);
-      cell.classList.add('miss');
-      setTimeout(() => cell.classList.remove('miss'), 200);
+      State.score = Math.max(0, State.score - 5);
+      UI.score.textContent = State.score;
     }
-    UI.score.textContent = String(State.score);
   }
 
-  /** Disminuye el tiempo y finaliza el juego al llegar a 0. */
   function tick() {
     State.timeLeft--;
-    UI.time.textContent = String(State.timeLeft);
-    if (State.timeLeft <= 0) {
-      endGame();
-    }
+    UI.time.textContent = State.timeLeft;
+    if (State.timeLeft <= 0) endGame();
   }
 
-  // ====================================================================
-  // 8) Historial y mensajes
-  // ====================================================================
+// ====================================================================
+// Nueva función: registrar partida en backend
+// ====================================================================
 
-  /** Guarda puntaje en historial (lista visual + array en memoria). */
-  function saveHistory(score) {
-    const li = document.createElement('li');
-    li.textContent = `${nowTime()} → Puntaje: ${score}`;
-    UI.historyList.appendChild(li);
-    State.history.push({ t: Date.now(), score });
+async function postPartida(score, result, level, durationSec) {
+  if (!State.profileId) {
+    toast('No hay perfil activo: la partida no se registrará en el leaderboard.');
+    return false;
   }
-
-  // ====================================================================
-  // 9) Ciclo de juego: start / reset / end
-  // ====================================================================
-
-  /** Finaliza el juego, detiene timers, muestra puntaje y guarda historial. */
-  function endGame() {
-    State.running = false;
-    clearInterval(State.timers.tick);
-    clearTimeout(State.timers.next);
-    toast(`⏰ Tiempo terminado. Puntaje: ${State.score}`);
-    saveHistory(State.score);
+  try {
+    const data = await api(`/api/perfiles/${State.profileId}/partidas`, {
+      method: 'POST',
+      body: JSON.stringify({ score, result, level, durationSec }),
+    });
+    renderStats(data);
+    await loadLeaderboard();
+    return true;
+  } catch (e) {
+    console.error(e);
+    toast('No se pudo registrar la partida en el backend.');
+    return false;
   }
+}
 
-  /** Restablece estado y reconstruye la grilla. */
-  function resetGame() {
-    State.running = false;
-    clearInterval(State.timers.tick);
-    clearTimeout(State.timers.next);
-    State.score = 0;
-    State.timeLeft = parseNumeric(UI.timeInput.value) || 30;
-    State.currentIndex = -1;
-    UI.score.textContent = '0';
-    UI.time.textContent = String(State.timeLeft);
-    clearGrid();
-    buildGrid();
-  }
 
-  /**
-   * Inicia el juego si todas las entradas son válidas.
-   * - Valida filas, columnas y tiempo (permite letras).
-   * - Reinicia estado y activa timers de juego.
-   */
+
   function startGame() {
     const vr = validateField(UI.rows, 2, LIMIT);
     const vc = validateField(UI.cols, 2, LIMIT);
     const vt = validateField(UI.timeInput, 10, 90);
     if (!vr.ok || !vc.ok || !vt.ok) return;
-
     State.rows = vr.value;
     State.cols = vc.value;
     State.timeLeft = vt.value;
     State.score = 0;
     UI.score.textContent = '0';
-    UI.time.textContent = String(State.timeLeft);
-
+    UI.time.textContent = State.timeLeft;
     buildGrid();
-
     State.running = true;
     clearInterval(State.timers.tick);
     clearTimeout(State.timers.next);
@@ -356,136 +425,89 @@ document.addEventListener('DOMContentLoaded', () => {
     nextCopion();
   }
 
+// ====================================================================
+// Reemplazo de endGame() para registrar partida + actualizar tablero
+// ====================================================================
+
+async function endGame() {
+  State.running = false;
+  clearInterval(State.timers.tick);
+  clearTimeout(State.timers.next);
+
+  toast(`⏰ Tiempo terminado. Puntaje: ${State.score}`);
+
+  // Guarda entrada en historial local de la vista (inmediato)
+  const li = document.createElement('li');
+  li.textContent = `${new Date().toLocaleTimeString()} — Puntaje: ${State.score}`;
+  UI.historyList.appendChild(li);
+
+  const level = { easy: 1, medium: 2, hard: 3 }[UI.difficulty?.value || 'medium'] || 2;
+  const planned = parseInt(UI.timeInput?.value) || 30;
+  const result = State.score > 0 ? 'win' : 'loss';
+
+  // Registrar en backend y refrescar leaderboard
+  await postPartida(State.score, result, level, planned);
+
+  // Recargar historial desde el backend (ya con persistencia)
+  await loadHistory();
+}
+
+  function resetGame() {
+    clearInterval(State.timers.tick);
+    clearTimeout(State.timers.next);
+    State.running = false;
+    State.score = 0;
+    UI.score.textContent = '0';
+    UI.time.textContent = UI.timeInput.value;
+    buildGrid();
+  }
+
   // ====================================================================
-  // 10) LISTENERS DE UI
+  // 8) EVENTOS PRINCIPALES
   // ====================================================================
 
-  // Iniciar / Reiniciar / Pantalla completa
   UI.startBtn.addEventListener('click', startGame);
   UI.resetBtn.addEventListener('click', resetGame);
   UI.fsBtn.addEventListener('click', () => {
     const el = document.documentElement;
-    if (!document.fullscreenElement) el.requestFullscreen?.();
-    else document.exitFullscreen?.();
+    if (!document.fullscreenElement) el.requestFullscreen();
+    else document.exitFullscreen();
   });
 
-  // Modo claro / oscuro
   if (UI.themeBtn) {
     UI.themeBtn.addEventListener('click', () => {
       const isLight = document.body.classList.toggle('light-mode');
       UI.themeBtn.textContent = isLight ? 'Modo Oscuro' : 'Modo Claro';
-      UI.themeBtn.setAttribute('aria-pressed', String(isLight));
     });
   }
 
-  // Validación en tiempo real (permite letras; solo avisa con burbuja)
-  [UI.rows, UI.cols, UI.timeInput].forEach((el) => {
-    el.addEventListener('input', () => {
-      const min = el === UI.timeInput ? 10 : 2;
-      const max = el === UI.timeInput ? 90 : LIMIT;
-      validateField(el, min, max);
-    });
-  });
+  UI2.createProfileBtn.addEventListener('click', createOrUpdateProfile);
+  UI2.savePrefsBtn.addEventListener('click', savePreferencesOnly);
+  UI2.deleteProfileBtn.addEventListener('click', deleteProfile);
 
-  // ====================================================================
-  
-  // ====================================================================
-  // 10.1) BLOQUEOS EN MEDIA PARTIDA (excepciones visibles)
-  // - Si el juego está corriendo (State.running === true), impedimos:
-  //   a) Cambiar la dificultad.
-  //   b) Cambiar filas/columnas/tiempo.
-  //   Mostramos un recuadro rojo en #errBox con el motivo.
-  // ====================================================================
-
-  /** Muestra un error en el recuadro rojo y lo oculta a los 2.5s */
-  function showErrorBox(message) {
-    if (!UI.errBox) return;
-    UI.errBox.textContent = String(message);
-    UI.errBox.classList.add('show');
-    // Limpia después de 2.5s
-    clearTimeout(UI.errBox._t);
-    UI.errBox._t = setTimeout(() => {
-      UI.errBox.classList.remove('show');
-      UI.errBox.textContent = '';
-    }, 2500);
+UI2.profileSelect.addEventListener('change', async () => {
+  const id = UI2.profileSelect.value;
+  if (id) {
+    State.profileId = id;
+    localStorage.setItem('profileId', id);
+    const p = await api(`/api/perfiles/${id}`);
+    fillProfileForm(p);
+    await loadHistory(); // 👈
+  } else {
+    State.profileId = null;
+    localStorage.removeItem('profileId');
+    UI.historyList.innerHTML = ''; // limpia historial
   }
-
-  /** Restaura el valor visual del input desde el estado actual */
-  function restoreInputsFromState(targetEl) {
-    if (targetEl === UI.rows) UI.rows.value = String(State.rows);
-    if (targetEl === UI.cols) UI.cols.value = String(State.cols);
-    if (targetEl === UI.timeInput) UI.timeInput.value = String(State.timeLeft);
-    if (targetEl === UI.difficulty) UI.difficulty.value = (UI.difficulty.value in DIFFICULTY_INTERVALS) ? UI.difficulty.value : 'medium';
-  }
-
-  // Interceptar cambios mientras corre el juego
-  const midGameGuard = (ev) => {
-    if (!State.running) return;
-    const el = ev.target;
-
-    // Caso 1: dificultad
-    if (el === UI.difficulty) {
-      ev.preventDefault();
-      restoreInputsFromState(el);
-      showErrorBox('⛔ En plena partida no se puede cambiar dificultad.');
-      return;
-    }
-
-    // Caso 2: tiempo/filas/columnas
-    if (el === UI.timeInput || el === UI.rows || el === UI.cols) {
-      ev.preventDefault();
-      restoreInputsFromState(el);
-      showErrorBox('⛔ Espere a que termine la partida para cambiar tiempo, filas o columnas.');
-      return;
-    }
-  };
-
-  // Escuchamos tanto 'input' como 'change' para máxima cobertura
-  
-  // ================================================================
-  // 10.2) FIX TEMPORAL — Inputs/Select legibles en modo oscuro (Rodrigo)
-  // ================================================================
-  const fixDarkModeInputs = () => {
-    const inputs = [UI.rows, UI.cols, UI.timeInput, UI.difficulty].filter(Boolean);
-    inputs.forEach(input => {
-      input.addEventListener('focus', () => {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const darkModeActive = document.body.classList.contains('light-mode') ? false : prefersDark;
-        if (darkModeActive) {
-          input.style.color = '#003366'; // Azul oscuro visible
-          input.style.backgroundColor = '#ffffff';
-          input.style.outline = '2px solid #0056b3';
-        }
-      });
-
-      input.addEventListener('blur', () => {
-        input.style.color = '';
-        input.style.backgroundColor = '';
-        input.style.outline = '';
-      });
-    });
-  };
-
-  fixDarkModeInputs();
-
-// 11) ARRANQUE
-// ====================================================================
-
-// 👇 Animación inicial global al cargar (Rodrigo)
-document.addEventListener('DOMContentLoaded', () => {
-  // Estado inicial invisible
-  document.body.style.opacity = '0';
-  document.body.style.transform = 'translateY(10px)';
-  document.body.style.transition = 'opacity 0.8s ease-out, transform 0.8s ease-out';
-
-  // Disparo con pequeño retraso para efecto suave
-  setTimeout(() => {
-    document.body.style.opacity = '1';
-    document.body.style.transform = 'translateY(0)';
-    document.body.classList.add('visible'); // para que Walter pueda usar CSS también
-  }, 100);
 });
 
-// Construcción inicial de la grilla
-buildGrid();
+  UI2.apiBase.addEventListener('change', () => {
+    State.apiBase = UI2.apiBase.value.trim();
+    localStorage.setItem('apiBase', State.apiBase);
+    toast('API Base actualizada');
+  });
+
+  buildGrid();
+  loadProfiles();
+  loadLeaderboard();
+
 })();
