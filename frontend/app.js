@@ -257,12 +257,24 @@ async function loadHistory() {
   }
 
   async function createOrUpdateProfile() {
+
+    // 🚨 VALIDACIÓN BLOQUEANTE DE USERNAME
+    const usernameValue = UI2.username.value.trim();
+    if (!validarUsername(usernameValue)) {
+      toast("🔴 El username debe tener al menos 3 caracteres.");
+      return; // <-- Esto DETIENE el envío al backend
+    }
+    // Mensaje estilo TDD VERDE ✅
+    toast("✅ Username válido — Caso VERDE de TDD pasado");
+
+  
     const body = {
       username: UI2.username.value.trim(),
       email: UI2.email.value.trim(),
       avatar: UI2.avatar.value.trim() || '👾',
       preferences: { difficulty: UI.difficulty.value || 'medium', sound: true },
     };
+  
     try {
       let data;
       if (UI2.profileSelect.value) {
@@ -279,6 +291,7 @@ async function loadHistory() {
       console.error(e);
     }
   }
+  
 
   async function savePreferencesOnly() {
     if (!State.profileId) return toast('Selecciona un perfil primero');
@@ -510,4 +523,48 @@ UI2.profileSelect.addEventListener('change', async () => {
   loadProfiles();
   loadLeaderboard();
 
+
+
+
+// ====================================================================
+// 🔴🟢♻ TDD - VALIDACIÓN DE USERNAME (Sólo Frontend – Fase ROJO → VERDE → REFACTOR)
+// ====================================================================
+
+console.log("=== TDD Username Validation: Rojo → Verde → Refactor ===");
+
+// 🔴 ROJO - Test manual que falla si la función no existe o no cumple
+try {
+  if (validarUsername("Jo") !== false) {
+    console.error("❌ Test FALLÓ: 'Jo' (2 letras) debería ser inválido");
+  } else {
+    console.log("✅ Test ROJO superado para 'Jo' (detectado como inválido)");
+  }
+} catch (e) {
+  console.error("❌ La función validarUsername aún no está definida para ROJO");
+}
+
+// 🟢 VERDE - Test manual para un username válido
+try {
+  if (validarUsername("Juan") !== true) {
+    console.error("❌ Test FALLÓ: 'Juan' (4 letras) debería ser válido");
+  } else {
+    console.log("✅ Test VERDE: 'Juan' es un username válido");
+  }
+} catch (e) {
+  console.error("❌ La función validarUsername aún no está definida para VERDE");
+}
+
+// 🟢 Versión mínima para pasar casos (ya está, solo referencial)
+function validarUsername(nombre) {
+  return typeof nombre === "string" && nombre.length >= 3;
+}
+
+// ♻ REFACTOR - versión mejorada con limpieza y robustez
+function validarUsername(nombre) {
+  if (typeof nombre !== "string") return false;
+  const limpio = nombre.trim();
+  return limpio.length >= 3;
+}
+
 })();
+
