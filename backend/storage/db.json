@@ -81,13 +81,21 @@
         "sound": true
       },
       "stats": {
-        "gamesPlayed": 0,
-        "wins": 0,
+        "gamesPlayed": 1,
+        "wins": 1,
         "losses": 0,
-        "totalScore": 0,
+        "totalScore": 30,
         "bestStreak": 0
       },
-      "history": []
+      "history": [
+        {
+          "date": "2025-10-24T11:56:34",
+          "score": 30,
+          "result": "win",
+          "level": 6,
+          "durationSec": 30
+        }
+      ]
     }
   ]
 }
