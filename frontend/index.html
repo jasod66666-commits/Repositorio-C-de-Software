@@ -7,112 +7,114 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div id="app" class="app-container" aria-live="polite">
-    <header class="topbar">
-      <h1 class="brand-title">ATRAPA AL COPIÓN</h1>
-      <div class="actions">
-        <button id="startBtn" class="btn" type="button" aria-label="Iniciar juego">Iniciar</button>
-        <button id="resetBtn" class="btn btn-ghost" type="button" aria-label="Reiniciar juego">Reiniciar</button>
-        <button id="fsBtn" class="btn btn-ghost" type="button" aria-label="Pantalla completa">Pantalla completa</button>
-        <button id="themeBtn" class="btn btn-ghost" type="button" aria-pressed="false" aria-label="Cambiar tema">Modo Claro</button>
+  <header class="topbar">
+    <h1 class="brand-title">ATRAPA AL COPIÓN</h1>
+    <div class="actions">
+      <button id="startBtn" class="btn" type="button" aria-label="Iniciar juego">Iniciar</button>
+      <button id="resetBtn" class="btn btn-ghost" type="button" aria-label="Reiniciar juego">Reiniciar</button>
+      <button id="fsBtn" class="btn btn-ghost" type="button" aria-label="Pantalla completa">Pantalla completa</button>
+      <button id="themeBtn" class="btn btn-ghost" type="button" aria-pressed="false" aria-label="Cambiar tema">
+        Modo Claro
+      </button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel" aria-labelledby="cfgTitle">
+      <h2 id="cfgTitle">Configuración</h2>
+
+      <div class="form-row">
+        <label for="rows">Filas</label>
+        <input id="rows" type="text" inputmode="numeric" value="6" placeholder="2 a 15" />
       </div>
-    </header>
 
-    <main class="layout">
-      <section class="panel" aria-labelledby="cfgTitle">
-        <h2 id="cfgTitle">Configuración</h2>
+      <div class="form-row">
+        <label for="cols">Columnas</label>
+        <input id="cols" type="text" inputmode="numeric" value="8" placeholder="2 a 15" />
+      </div>
 
-        <div class="form-row">
-          <label for="rows">Filas</label>
-          <input id="rows" type="text" inputmode="numeric" value="6" placeholder="2 a 15" />
-        </div>
+      <div class="form-row">
+        <label for="timeInput">Tiempo (seg)</label>
+        <input id="timeInput" type="text" inputmode="numeric" value="30" placeholder="10 a 90" />
+      </div>
 
-        <div class="form-row">
-          <label for="cols">Columnas</label>
-          <input id="cols" type="text" inputmode="numeric" value="8" placeholder="2 a 15" />
-        </div>
+      <div class="form-row">
+        <label for="difficulty">Dificultad</label>
+        <select id="difficulty" aria-label="Nivel de dificultad">
+          <option value="easy">Fácil</option>
+          <option value="medium" selected>Medio</option>
+          <option value="hard">Difícil</option>
+        </select>
+      </div>
 
-        <div class="form-row">
-          <label for="timeInput">Tiempo (s)</label>
-          <input id="timeInput" type="text" inputmode="numeric" value="30" placeholder="10 a 90" />
-        </div>
+      <small id="maxHint" class="hint" aria-live="polite"></small>
+      <div id="errBox" class="errors" aria-live="polite"></div>
 
-        <div class="form-row">
-          <label for="difficulty">Dificultad</label>
-          <select id="difficulty" aria-label="Nivel de dificultad">
-            <option value="easy">Fácil</option>
-            <option value="medium" selected>Medio</option>
-            <option value="hard">Difícil</option>
-          </select>
-        </div>
+      <hr class="divider" style="margin: 15px 0; border: 0; border-top: 1px solid rgba(255,255,255,.1);" />
+      <h2 id="profileTitle">Gestión de Perfil/API</h2>
+      
+      <div class="form-row">
+        <label for="profileSelect">Perfil Activo</label>
+        <select id="profileSelect" aria-label="Seleccionar perfil"></select>
+      </div>
 
-        <small id="maxHint" class="hint" aria-live="polite"></small>
-        <div id="errBox" class="errors" aria-live="polite"></div>
+      <div class="form-row">
+        <label for="username">Usuario</label>
+        <input id="username" type="text" placeholder="Nombre de usuario" />
+      </div>
 
-        <hr class="divider" />
+      <div class="form-row">
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="email@ejemplo.com" />
+      </div>
 
-        <h3>Perfil</h3>
+      <div class="form-row">
+        <label for="avatar">Avatar URL</label>
+        <input id="avatar" type="text" placeholder="URL o Emoji" />
+      </div>
 
-        <div class="form-row">
-          <label for="profileSelect">Seleccionar perfil</label>
-          <select id="profileSelect"></select>
-        </div>
+      <div class="form-row">
+        <label for="apiBase">API Base</label>
+        <input id="apiBase" type="text" placeholder="http://localhost:5000" />
+      </div>
 
-        <div class="form-row">
-          <label for="username">Usuario</label>
-          <input id="username" type="text" placeholder="Tu nombre" />
-        </div>
+      <div class="btn-row" style="display:flex; flex-direction:column; gap:8px; margin-top: 10px;">
+        <button id="createProfileBtn" class="btn">Crear/Actualizar Perfil</button>
+        <button id="savePrefsBtn" class="btn btn-ghost">Guardar Preferencias</button>
+        <button id="deleteProfileBtn" class="btn btn-ghost danger">Eliminar Perfil</button>
+      </div>
 
-        <div class="form-row">
-          <label for="email">Email</label>
-          <input id="email" type="email" placeholder="tu@correo.com" />
-        </div>
+      <small id="profileStatus" class="hint" aria-live="polite"></small>
 
-        <div class="form-row">
-          <label for="avatar">Avatar</label>
-          <input id="avatar" type="text" placeholder="Emoji 👾" />
-        </div>
+      <hr class="divider" style="margin: 15px 0; border: 0; border-top: 1px solid rgba(255,255,255,.1);" />
+      
+      <h3>Estadísticas Personales</h3>
+      <div id="statsBox" class="stats-box" style="margin-bottom:15px;"></div>
 
-        <div class="form-row">
-          <label for="apiBase">API Base</label>
-          <input id="apiBase" type="text" placeholder="http://localhost:5000" />
-        </div>
+      <h3>Leaderboard Global</h3>
+      <ol id="leaderboard" class="history"></ol>
 
-        <div class="btn-row">
-          <button id="createProfileBtn" class="btn">Crear/Actualizar Perfil</button>
-          <button id="savePrefsBtn" class="btn btn-ghost">Guardar Preferencias</button>
-          <button id="deleteProfileBtn" class="btn danger">Eliminar Perfil</button>
-        </div>
+    </section>
 
-        <small id="profileStatus" class="hint" aria-live="polite"></small>
+    <section class="game">
+      <div class="hud" aria-live="polite">
+        <div class="stat">Puntaje: <span id="score">0</span></div>
+        <div class="stat">Tiempo: <span id="timeLeft">30</span>s</div>
+      </div>
 
-        <div id="statsBox" class="stats-box"></div>
+      <div id="grid" class="grid" role="grid" aria-label="Tablero del juego"></div>
+    </section>
 
-        <hr class="divider" />
+    <aside class="panel" id="historyPanel" aria-labelledby="histTitle">
+      <h2 id="histTitle">Historial</h2>
+      <ul id="historyList" class="history"></ul>
+    </aside>
+  </main>
 
-        <h3>Leaderboard</h3>
-        <ol id="leaderboard" class="leaderboard"></ol>
-      </section>
+  <footer class="foot">
+    <small>Sistema para niños — código refactorizado, comentado y ordenado.</small>
+  </footer>
 
-      <section class="game">
-        <div class="hud" aria-live="polite">
-          <div class="stat">Puntaje: <span id="score">0</span></div>
-          <div class="stat">Tiempo: <span id="timeLeft">30</span>s</div>
-        </div>
-        <div id="grid" class="grid" role="grid" aria-label="Tablero del juego"></div>
-      </section>
-
-      <aside class="panel" id="historyPanel" aria-labelledby="histTitle">
-        <h2 id="histTitle">Historial</h2>
-        <ul id="historyList" class="history"></ul>
-      </aside>
-    </main>
-
-    <footer class="foot">
-      <small>Sistema para niños — código refactorizado, comentado y ordenado.</small>
-    </footer>
-
-  </div> <!-- /#app -->
   <script src="app.js"></script>
 </body>
 </html>
