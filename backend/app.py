@@ -1,259 +1,264 @@
-import os, json, uuid
-from datetime import datetime
-from flask import Flask, jsonify, request
+from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+import uuid
+from sqlalchemy import func
 
 app = Flask(__name__)
-# ✅ Configuración CORS más permisiva para desarrollo local
-CORS(app, resources={
-    r"/api/*": {
-        "origins": "*",
-        "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
-    }
-})
 
-# -------------------- Persistencia --------------------
-BASE_DIR = os.path.dirname(__file__)
-DB_PATH = os.path.join(BASE_DIR, "storage", "db.json")
+# 🔗 CONEXIÓN A MARIADB
+# Ajusta la contraseña root1234 a la que tú pusiste al instalar MariaDB.
+# game_db = la base que creaste en HeidiSQL.
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:root1234@127.0.0.1:3306/game_db"
 
-def read_data():
-    if not os.path.exists(DB_PATH):
-        return {"perfiles": []}
-    try:
-        with open(DB_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return {"perfiles": []}
+# Evitar warnings innecesarios
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# Carga a memoria
-_data = read_data()
-perfiles = _data.get("perfiles", [])
+# Permitir que tu frontend (localhost) hable con esta API
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-def save_data(data=None):
-    global perfiles
-    if data is None:
-        data = {"perfiles": perfiles}
-    else:
-        if "perfiles" in data:
-            perfiles = data["perfiles"]
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    with open(DB_PATH, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+# Inicializamos el ORM
+db = SQLAlchemy(app)
 
-def find_profile(pid):
-    return next((p for p in perfiles if str(p.get("id")) == str(pid)), None)
 
-# -------------------- Utilidades de stats --------------------
-def ensure_stats(p):
-    p.setdefault("stats", {
-        "gamesPlayed": 0,
-        "wins": 0,
-        "losses": 0,
-        "totalScore": 0,
-        "bestStreak": 0
-    })
-    p.setdefault("history", [])
-    # ✅ Asegurar que preferences existe
-    p.setdefault("preferences", {"difficulty": "medium", "sound": True})
-    return p
+# =============== MODELOS (TABLAS) ===============
 
-def apply_game_result(p, score, result, level=None, durationSec=None):
-    ensure_stats(p)
-    s = p["stats"]
-    s["gamesPlayed"] = s.get("gamesPlayed", 0) + 1
-    s["totalScore"] = s.get("totalScore", 0) + int(score)
-    if result == "win":
-        s["wins"] = s.get("wins", 0) + 1
-    else:
-        s["losses"] = s.get("losses", 0) + 1
+class Profile(db.Model):
+    __tablename__ = "profiles"
 
-    p["history"].append({
-        "date": datetime.now().isoformat(timespec="seconds"),
-        "score": int(score),
-        "result": result,
-        "level": level,
-        "durationSec": durationSec
-    })
-    p["history"] = p["history"][-50:]
+    id = db.Column(db.String(64), primary_key=True)        # UUID
+    username = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120))
+    avatar = db.Column(db.String(255))
 
-# -------------------- Rutas API --------------------
-@app.route("/")
-def root():
-    return jsonify({"message": "API Atrapa al Copión (OK)", "version": "2.0"}), 200
+    # preferencias del juego
+    difficulty = db.Column(db.String(20), default="medium")
+    rows = db.Column(db.Integer, default=6)
+    cols = db.Column(db.Integer, default=8)
+    time = db.Column(db.Integer, default=30)
 
-@app.route("/api/perfiles", methods=["GET"], strict_slashes=False)
-def list_perfiles():
-    return jsonify(perfiles), 200
+    # estadísticas acumuladas
+    gamesPlayed = db.Column(db.Integer, default=0)
+    wins = db.Column(db.Integer, default=0)
+    losses = db.Column(db.Integer, default=0)
+    totalScore = db.Column(db.Integer, default=0)
+    bestStreak = db.Column(db.Integer, default=0)
 
-@app.route("/api/perfiles", methods=["POST"], strict_slashes=False)
-def create_perfil():
-    data = request.get_json(silent=True) or {}
-    p = {
-        "id": data.get("id") or str(uuid.uuid4()),
-        "username": data.get("username", "").strip(),
-        "email": data.get("email", "").strip(),
-        "avatar": data.get("avatar", "👾"),
-        "preferences": data.get("preferences") or data.get("prefs") or {
-            "difficulty": "medium", 
-            "sound": True,
-            "rows": 6,
-            "cols": 8,
-            "time": 30
+    # relación 1:N con partidas jugadas
+    history = db.relationship(
+        "ScoreHistory",
+        backref="profile",
+        lazy=True,
+        cascade="all, delete-orphan"
+    )
+
+
+class ScoreHistory(db.Model):
+    __tablename__ = "scores"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    profile_id = db.Column(db.String(64), db.ForeignKey("profiles.id"), nullable=False)
+
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    score = db.Column(db.Integer, nullable=False)
+    difficulty = db.Column(db.String(20), default="medium")
+    result = db.Column(db.String(10), default="loss")   # "win" o "loss"
+
+    # metadata opcional de la partida
+    level_rows = db.Column(db.Integer)
+    level_cols = db.Column(db.Integer)
+    durationSec = db.Column(db.Integer)
+
+
+# =============== HELPERS (FORMATO RESPUESTA JSON) ===============
+
+def profile_to_dict(p: Profile):
+    return {
+        "id": p.id,
+        "username": p.username,
+        "email": p.email,
+        "avatar": p.avatar,
+        "preferences": {
+            "difficulty": p.difficulty,
+            "rows": p.rows,
+            "cols": p.cols,
+            "time": p.time
         },
+        "stats": {
+            "gamesPlayed": p.gamesPlayed,
+            "wins": p.wins,
+            "losses": p.losses,
+            "totalScore": p.totalScore,
+            "bestStreak": p.bestStreak
+        }
     }
-    ensure_stats(p)
-    perfiles.append(p)
-    save_data()
-    return jsonify(p), 201
 
-@app.route("/api/perfiles/<pid>", methods=["GET", "PUT", "PATCH", "DELETE"], strict_slashes=False)
+
+# =============== ENDPOINTS: PERFILES ===============
+
+@app.route("/api/perfiles", methods=["GET", "POST"])
+def perfiles_handler():
+    # LISTAR PERFILES
+    if request.method == "GET":
+        profiles = Profile.query.all()
+        return jsonify([profile_to_dict(p) for p in profiles]), 200
+
+    # CREAR PERFIL
+    if request.method == "POST":
+        data = request.get_json() or {}
+        prefs = data.get("preferences", {}) or {}
+
+        new_profile = Profile(
+            id=str(uuid.uuid4()),
+            username=data.get("username", "Anónimo"),
+            email=data.get("email", ""),
+            avatar=data.get("avatar", "🙂"),
+
+            difficulty=prefs.get("difficulty", "medium"),
+            rows=prefs.get("rows", 6),
+            cols=prefs.get("cols", 8),
+            time=prefs.get("time", 30),
+
+            gamesPlayed=0,
+            wins=0,
+            losses=0,
+            totalScore=0,
+            bestStreak=0
+        )
+
+        db.session.add(new_profile)
+        db.session.commit()
+
+        return jsonify(profile_to_dict(new_profile)), 201
+
+
+@app.route("/api/perfiles/<pid>", methods=["GET", "PATCH", "DELETE"])
 def perfil_by_id(pid):
-    p = find_profile(pid)
-    if not p:
+    profile = Profile.query.get(pid)
+    if not profile:
         return jsonify({"error": "Perfil no encontrado"}), 404
 
+    # LEER UN PERFIL
     if request.method == "GET":
-        ensure_stats(p)
-        return jsonify(p), 200
+        return jsonify(profile_to_dict(profile)), 200
 
-    if request.method in ["PUT", "PATCH"]:
-        data = request.get_json(silent=True) or {}
-        
-        # ✅ Actualización completa (PUT) o parcial (PATCH)
-        if request.method == "PUT":
-            for k in ("username", "email", "avatar", "preferences", "stats", "history"):
-                if k in data:
-                    p[k] = data[k]
-        else:  # PATCH - solo actualiza lo que viene
-            if "preferences" in data or "prefs" in data:
-                prefs_data = data.get("preferences") or data.get("prefs")
-                if "preferences" not in p:
-                    p["preferences"] = {}
-                p["preferences"].update(prefs_data)
-            
-            for k in ("username", "email", "avatar"):
-                if k in data:
-                    p[k] = data[k]
-        
-        ensure_stats(p)
-        save_data()
-        return jsonify(p), 200
+    # ACTUALIZAR PERFIL
+    if request.method == "PATCH":
+        data = request.get_json() or {}
 
+        if "username" in data:
+            profile.username = data["username"]
+        if "email" in data:
+            profile.email = data["email"]
+        if "avatar" in data:
+            profile.avatar = data["avatar"]
+
+        prefs = data.get("preferences") or data.get("prefs") or {}
+        if "difficulty" in prefs:
+            profile.difficulty = prefs["difficulty"]
+        if "rows" in prefs:
+            profile.rows = prefs["rows"]
+        if "cols" in prefs:
+            profile.cols = prefs["cols"]
+        if "time" in prefs:
+            profile.time = prefs["time"]
+
+        db.session.commit()
+        return jsonify(profile_to_dict(profile)), 200
+
+    # ELIMINAR PERFIL
     if request.method == "DELETE":
-        perfiles.remove(p)
-        save_data()
+        db.session.delete(profile)
+        db.session.commit()
         return jsonify({"message": "Perfil eliminado", "id": pid}), 200
 
-# ✅ Endpoint CORRECTO para registrar partidas
-@app.route("/api/perfiles/<pid>/partidas", methods=["POST"], strict_slashes=False)
-def add_partida(pid):
-    p = find_profile(pid)
-    if not p:
-        return jsonify({"error": "Perfil no encontrado"}), 404
-    data = request.get_json(silent=True) or {}
-    score = int(data.get("score", 0))
-    result = data.get("result", "loss")
-    level = data.get("level")
-    durationSec = data.get("durationSec")
-    apply_game_result(p, score, result, level, durationSec)
-    save_data()
-    return jsonify(p), 201
 
-# ✅ Alias alternativo para compatibilidad (usa profileId en el body)
-@app.route("/api/partidas", methods=["POST"], strict_slashes=False)
-def create_partida():
-    data = request.get_json(silent=True) or {}
-    pid = data.get("profileId")
-    if not pid:
-        return jsonify({"error": "profileId requerido"}), 400
-    p = find_profile(pid)
-    if not p:
-        return jsonify({"error": "Perfil no encontrado"}), 404
-    score = int(data.get("score", 0))
-    result = data.get("result", "loss")
-    level = data.get("level")
-    durationSec = data.get("durationSec")
-    apply_game_result(p, score, result, level, durationSec)
-    save_data()
-    return jsonify(p), 201
+# =============== ENDPOINTS: SCORES / HISTORIAL ===============
 
-# ✅ NUEVO: Endpoint para obtener scores (historial)
-@app.route("/api/scores/<pid>", methods=["GET"], strict_slashes=False)
-def get_scores(pid):
-    """Retorna el historial de partidas con formato compatible"""
-    p = find_profile(pid)
-    if not p:
+@app.route("/api/scores/<pid>", methods=["POST", "GET"])
+def scores_handler(pid):
+    profile = Profile.query.get(pid)
+    if not profile:
         return jsonify({"error": "Perfil no encontrado"}), 404
-    ensure_stats(p)
-    
-    # Transformar history al formato esperado por el frontend
-    scores = []
-    for entry in p.get("history", []):
-        scores.append({
-            "timestamp": entry.get("date"),
-            "score": entry.get("score", 0),
-            "difficulty": p.get("preferences", {}).get("difficulty", "medium"),
-            "result": entry.get("result", "loss")
-        })
-    
-    return jsonify(scores), 200
 
-# ✅ NUEVO: Endpoint POST para registrar score (alias mejorado)
-@app.route("/api/scores/<pid>", methods=["POST"], strict_slashes=False)
-def post_score(pid):
-    """Registra un nuevo score en el perfil"""
-    p = find_profile(pid)
-    if not p:
-        return jsonify({"error": "Perfil no encontrado"}), 404
-    
-    data = request.get_json(silent=True) or {}
-    score = int(data.get("score", 0))
-    difficulty = data.get("difficulty", "medium")
-    result = "win" if score > 0 else "loss"
-    
-    # Guardar la dificultad en preferences si viene en el request
-    if "difficulty" in data:
-        if "preferences" not in p:
-            p["preferences"] = {}
-        p["preferences"]["difficulty"] = difficulty
-    
-    apply_game_result(p, score, result, 
-                     level=data.get("rows"), 
-                     durationSec=data.get("time"))
-    save_data()
-    
-    return jsonify({
-        "message": "Score registrado",
-        "score": score,
-        "profile": p
-    }), 201
+    # REGISTRAR PARTIDA
+    if request.method == "POST":
+        body = request.get_json() or {}
 
-@app.route("/api/historial/<pid>", methods=["GET"], strict_slashes=False)
-def get_historial(pid):
-    p = find_profile(pid)
-    if not p:
-        return jsonify({"error": "Perfil no encontrado"}), 404
-    ensure_stats(p)
-    return jsonify(p.get("history", [])), 200
+        score_val = int(body.get("score", 0))
+        diff_val = body.get("difficulty", profile.difficulty)
+        result_val = "win" if score_val > 0 else "loss"
 
-@app.route("/api/leaderboard", methods=["GET"], strict_slashes=False)
+        # 1. Guardar la partida en tabla scores
+        partida = ScoreHistory(
+            profile_id=pid,
+            score=score_val,
+            difficulty=diff_val,
+            result=result_val,
+            level_rows=body.get("rows"),
+            level_cols=body.get("cols"),
+            durationSec=body.get("time")
+        )
+        db.session.add(partida)
+
+        # 2. Actualizar stats acumuladas
+        profile.gamesPlayed = (profile.gamesPlayed or 0) + 1
+        profile.totalScore = (profile.totalScore or 0) + score_val
+        if result_val == "win":
+            profile.wins = (profile.wins or 0) + 1
+        else:
+            profile.losses = (profile.losses or 0) + 1
+
+        # Guardar última dificultad usada
+        profile.difficulty = diff_val
+
+        db.session.commit()
+
+        return jsonify(profile_to_dict(profile)), 201
+
+    # OBTENER HISTORIAL DE PARTIDAS
+    if request.method == "GET":
+        partidas = ScoreHistory.query.filter_by(profile_id=pid).all()
+        out = []
+        for r in partidas:
+            out.append({
+                "timestamp": r.timestamp.isoformat(timespec="seconds"),
+                "score": r.score,
+                "difficulty": r.difficulty,
+                "result": r.result
+            })
+        return jsonify(out), 200
+
+
+# =============== ENDPOINT: LEADERBOARD ===============
+
+@app.route("/api/leaderboard", methods=["GET"])
 def leaderboard():
-    """Retorna top 10 con formato mejorado"""
-    enriched = []
-    for p in perfiles:
-        ensure_stats(p)
-        enriched.append({
-            "id": p["id"],
-            "username": p.get("username", "Anónimo"),
-            "totalScore": p["stats"].get("totalScore", 0),
-            "highScore": max([h.get("score", 0) for h in p.get("history", [])], default=0),
-            "difficulty": p.get("preferences", {}).get("difficulty", "medium"),
-            "gamesPlayed": p["stats"].get("gamesPlayed", 0)
+    # top 10 ordenado por totalScore
+    players = Profile.query.order_by(Profile.totalScore.desc()).limit(10).all()
+
+    data = []
+    for p in players:
+        # mejor score individual (highScore)
+        high = db.session.query(func.max(ScoreHistory.score)) \
+                         .filter_by(profile_id=p.id).scalar() or 0
+
+        data.append({
+            "id": p.id,
+            "username": p.username,
+            "totalScore": p.totalScore,
+            "highScore": high,
+            "difficulty": p.difficulty,
+            "gamesPlayed": p.gamesPlayed
         })
-    
-    top = sorted(enriched, key=lambda x: x["totalScore"], reverse=True)[:10]
-    return jsonify(top), 200
+
+    return jsonify(data), 200
+
+
+# =============== ARRANQUE DEL SERVIDOR ===============
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    with app.app_context():
+        db.create_all()  # crea las tablas en MariaDB si no existen
+    app.run(debug=True)

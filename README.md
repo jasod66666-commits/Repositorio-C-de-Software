@@ -1,211 +1,299 @@
-# 🧩 Atrapa al Copión — Integración Backend (Unidad 2)
+# 🧩 Atrapa al Copión — Backend + Base de Datos SQL (Unidad 3)
 
 ## 👥 Integrantes del Grupo 5
 
 | Apellidos y Nombres | Código | Rol |
 |----------------------|---------|------|
-| **Rodrigo Gutiérrez Lazo** | 73247464 | 🧠 Desarrollador principal — Backend y Servicios Flask |
-| Jorge Roland Gutiérrez Loyola | 73050522 | 🎨 Mejoras y ajustes en la interfaz (HTML, CSS, JS) |
-| Walter Omar Ruiz Garagundo | 73025039 | 🧾 Documentación, pruebas y soporte funcional |
+| **Rodrigo Gutiérrez Lazo** | 73247464 | 🧠 Backend principal (Flask + API REST + integración BD SQL) |
+| Jorge Roland Gutiérrez Loyola | 73050522 | 🎨 Interfaz y lógica visual (HTML, CSS, JS, UX del juego) |
+| Walter Omar Ruiz Garagundo | 73025039 | 📄 Documentación técnica, pruebas funcionales y validación de flujo |
 
 ---
 
-## 🎯 Descripción del Proyecto
+## 🎯 Descripción General
 
-**Atrapa al Copión** es una aplicación web interactiva y educativa que combina lógica, memoria y reflejos.  
-En esta **Unidad 2**, se desarrolló la **integración completa entre el frontend (HTML, CSS, JavaScript)** y el **backend en Flask (Python)**, implementando comunicación REST, persistencia JSON y visualización dinámica de datos en la interfaz.
+**Atrapa al Copión** es un juego web interactivo que combina memoria, rapidez y lógica.  
+En **Unidad 2**, los datos se guardaban en archivos JSON locales.  
+En **Unidad 3**, se implementó una **base de datos SQL real (MariaDB)** administrada con **HeidiSQL**, lo que permite persistencia profesional y una arquitectura cliente-servidor completa:
+
+```
+
+Frontend (HTML/JS) ↔ Flask Backend ↔ MariaDB (SQLAlchemy + PyMySQL)
+
+```
 
 ---
 
-## ⚙️ Nueva Funcionalidad (Unidad 2)
+## 🆕 Cambios Clave en la Unidad 3
 
-- CRUD completo de perfiles de jugador (`POST`, `GET`, `PUT`, `DELETE`).  
-- Persistencia local mediante `storage/db.json`.  
-- Registro de partidas con estadísticas e historial (`score`, `wins`, `losses`).  
-- Leaderboard dinámico ordenado por puntaje total.  
-- Integración total entre frontend y backend mediante `fetch()`.  
-- Solución de errores CORS y comunicación estable entre puertos (`3000 ↔ 5000`).  
-- Entorno virtual configurado para ejecución del backend.  
-
-> 💡 **Nota:** El desarrollo de los servicios backend (Flask, endpoints, persistencia y lógica) fue realizado principalmente por **Rodrigo Gutiérrez Lazo**, mientras que **Jorge** y **Walter** se encargaron de **mejoras visuales, maquetado HTML y revisión de interfaz.**
+- ✅ Reemplazo del sistema JSON por **base de datos SQL real**.  
+- ✅ Instalación y configuración de **MariaDB + HeidiSQL**.  
+- ✅ Uso de **SQLAlchemy** para mapear modelos `profiles` y `scores`.  
+- ✅ Creación automática de tablas y registros persistentes.  
+- ✅ Pruebas de conexión, inserción y consultas en HeidiSQL.  
+- ✅ Integración sin cambios en el frontend (API estable).  
 
 ---
 
 ## 🧱 Estructura del Proyecto
 
 ```
+
 Repositorio-C-de-Software/
 ├── backend/
-│   ├── app.py               # Código principal del backend Flask
-│   ├── requirements.txt     # Dependencias del entorno virtual
-│   └── storage/
-│       └── db.json          # Base de datos local JSON
+│   ├── app.py                # Backend Flask conectado a MariaDB
+│   ├── requirements.txt      # Dependencias del entorno Flask
+│   └── .venv/                # Entorno virtual (Python)
 │
 ├── frontend/
-│   ├── index.html           # Interfaz del juego
-│   ├── app.js               # Conexión con API y lógica de juego
-│   └── styles.css           # Diseño visual (CSS)
+│   ├── index.html            # Interfaz visual
+│   ├── app.js                # Lógica y conexión con API Flask
+│   └── styles.css            # Diseño CSS
 │
-└── README.md                # Instrucciones del proyecto
-```
+└── README.md                 # Documentación del proyecto
+
+````
 
 ---
 
-## 🧩 Requisitos Previos
+## 🖥 Requisitos Previos
 
-Antes de ejecutar el proyecto, asegúrate de tener instalado:
-
-- 🐍 **Python 3.11+**
-- 💻 **Node.js** (solo si usarás servidor local del frontend)
-- 🌐 **Git** (para clonar y subir cambios)
+- 🐍 **Python 3.10+**
+- 🧱 **MariaDB Server** (motor SQL)
+- 🪶 **HeidiSQL** (cliente visual)
+- 🌐 **Git** (para versionado)
+- 💻 *(Opcional)* **Node.js** si quieres levantar el frontend con un servidor local.
 
 ---
 
-## ⚙️ Instalación del Backend
+## 🛠 Instalación de MariaDB y HeidiSQL
 
-### 1️⃣ Ir a la carpeta del backend:
+### 1️⃣ Instalar MariaDB
+- Descarga desde: [https://mariadb.org/download/](https://mariadb.org/download/)
+- Instala con:
+  - Usuario: `root`
+  - Contraseña: `root1234`
+  - Puerto: `3306`
+  - Marca “Install as service” ✅
+
+### 2️⃣ Verificar instalación
+En la terminal:
+```bash
+mysql -u root -p
+````
+
+Si ves `Welcome to the MariaDB monitor...`, está todo correcto.
+
+### 3️⃣ Instalar HeidiSQL
+
+* Descarga desde: [https://www.heidisql.com/download.php](https://www.heidisql.com/download.php)
+* Abre HeidiSQL → Crea nueva sesión:
+
+  ```
+  Host/IP: 127.0.0.1
+  Puerto: 3306
+  Usuario: root
+  Contraseña: root1234
+  ```
+* Conéctate.
+
+### 4️⃣ Crear base de datos `game_db`
+
+En HeidiSQL:
+
+1. Clic derecho en el servidor → “Crear nueva base de datos…”
+2. Nombre: `game_db`
+3. Collation: `utf8mb4_uca1400_ai_ci`
+4. Aceptar ✅
+
+---
+
+## ⚙️ Configuración del Backend
+
+### 1️⃣ Entrar a la carpeta
+
 ```bash
 cd backend
 ```
 
-### 2️⃣ Crear entorno virtual:
+### 2️⃣ Crear entorno virtual
+
 ```bash
 python -m venv .venv
 ```
 
-### 3️⃣ Activar entorno virtual:
-#### En Windows:
+### 3️⃣ Activar entorno virtual
+
+Windows:
+
 ```bash
 .venv\Scripts\activate
 ```
-#### En macOS/Linux:
-```bash
-source .venv/bin/activate
-```
 
-### 4️⃣ Instalar dependencias:
+### 4️⃣ Instalar dependencias
+
 ```bash
 pip install -r requirements.txt
 ```
 
-### 5️⃣ Ejecutar el servidor:
+### 5️⃣ Ejecutar el backend
+
 ```bash
 python app.py
 ```
 
-✅ Verás en consola:
-```
- * Running on http://127.0.0.1:5000
-```
-
-El backend quedará disponible en:  
-👉 [http://localhost:5000](http://localhost:5000)
+✔ Flask iniciará en `http://localhost:5000`
+✔ Las tablas `profiles` y `scores` se crearán automáticamente en `game_db`.
 
 ---
 
-## 🌐 Ejecución del Frontend
+## 📦 requirements.txt (final)
 
-### Opción 1 — Abrir directamente (sin Node)
-1. Abre la carpeta `frontend/`
-2. Haz doble clic en `index.html`
-3. Configura en la interfaz:
-   ```
-   API Base: http://localhost:5000
-   ```
-
-### Opción 2 — Servidor local (recomendada)
-Si tienes Node.js instalado:
-```bash
-cd frontend
-npm install -g serve
-serve .
+```txt
+Flask==3.0.3
+Flask-Cors==4.0.0
+Flask-SQLAlchemy==3.1.1
+PyMySQL==1.1.0
 ```
 
-Luego abre el navegador en 👉 [http://localhost:3000](http://localhost:3000)
+---
+
+## 🔌 Conexión Flask ↔ MariaDB
+
+En `app.py`:
+
+```python
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:root1234@127.0.0.1:3306/game_db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+```
+
+* `root:root1234` → usuario y contraseña del servidor MariaDB.
+* `game_db` → base de datos creada en HeidiSQL.
 
 ---
 
-## 🧠 Endpoints Implementados
+## 🧩 Tablas Automáticas
 
-| Método | Endpoint | Descripción |
-|--------|-----------|-------------|
-| **POST** | `/api/perfiles` | Crear un nuevo perfil |
-| **GET** | `/api/perfiles` | Listar todos los perfiles |
-| **GET** | `/api/perfiles/<id>` | Obtener un perfil específico |
-| **PUT** | `/api/perfiles/<id>` | Actualizar los datos del perfil |
-| **DELETE** | `/api/perfiles/<id>` | Eliminar perfil existente |
-| **POST** | `/api/perfiles/<id>/partidas` | Registrar nueva partida |
-| **GET** | `/api/historial/<id>` | Mostrar historial del jugador |
-| **GET** | `/api/leaderboard` | Mostrar ranking general |
+* **profiles**
+  Guarda los datos y estadísticas del jugador.
+
+* **scores**
+  Historial de partidas (puntaje, dificultad, resultado, etc.)
+
+Estas tablas se crean solas al ejecutar el backend por primera vez.
 
 ---
 
-## 📊 Ejemplos de JSON
+## 🧠 Endpoints REST Implementados
 
-### Crear perfil (`POST /api/perfiles`)
-**Request**
+| Método     | Endpoint             | Descripción               |
+| ---------- | -------------------- | ------------------------- |
+| **POST**   | `/api/perfiles`      | Crear nuevo perfil        |
+| **GET**    | `/api/perfiles`      | Listar perfiles           |
+| **GET**    | `/api/perfiles/<id>` | Obtener perfil específico |
+| **PATCH**  | `/api/perfiles/<id>` | Actualizar perfil         |
+| **DELETE** | `/api/perfiles/<id>` | Eliminar perfil           |
+| **POST**   | `/api/scores/<id>`   | Registrar partida         |
+| **GET**    | `/api/scores/<id>`   | Ver historial de partidas |
+| **GET**    | `/api/leaderboard`   | Mostrar ranking general   |
+
+---
+
+## 🧾 Ejemplo — Crear Perfil
+
+**Request:**
+
+```http
+POST /api/perfiles
+Content-Type: application/json
+```
+
+**Body:**
+
 ```json
 {
-  "username": "PlayerTest",
-  "email": "player@example.com",
-  "avatar": "👾",
-  "preferences": {"difficulty": "medium", "sound": true}
+  "username": "Pingoro",
+  "email": "pingoro@demo.com",
+  "avatar": "😎",
+  "preferences": {
+    "difficulty": "easy",
+    "rows": 6,
+    "cols": 8,
+    "time": 30
+  }
 }
 ```
 
-**Response**
+**Response:**
+
 ```json
 {
   "id": "b1f2b3c4-d5e6-f7g8",
-  "username": "PlayerTest",
-  "email": "player@example.com",
-  "avatar": "👾",
-  "preferences": {"difficulty": "medium","sound": true},
-  "stats": {"gamesPlayed": 0,"wins": 0,"losses": 0,"totalScore": 0},
-  "history": []
+  "username": "Pingoro",
+  "email": "pingoro@demo.com",
+  "avatar": "😎",
+  "preferences": {
+    "difficulty": "easy",
+    "rows": 6,
+    "cols": 8,
+    "time": 30
+  },
+  "stats": {
+    "gamesPlayed": 0,
+    "wins": 0,
+    "losses": 0,
+    "totalScore": 0,
+    "bestStreak": 0
+  }
 }
 ```
 
----
-
-## 🧪 Verificación Local
-
-- ✅ Backend (`python app.py`) ejecuta correctamente.  
-- ✅ Frontend obtiene datos dinámicos del backend.  
-- ✅ CORS habilitado sin errores.  
-- ✅ Persistencia de datos en `db.json`.  
-- ✅ CRUD, leaderboard e historial funcionando correctamente.
+Verifica en HeidiSQL → tabla `profiles` → datos insertados ✅
 
 ---
 
-## 🚀 Próximas Mejoras
+## 🌐 Frontend
 
-- Validaciones de campos vacíos en formularios.  
-- Alertas visuales en el frontend.  
-- Implementación de sesiones o autenticación básica.  
-- Despliegue remoto (Render, Vercel o Railway).  
+1. Abre `frontend/index.html` en tu navegador.
+2. Asegúrate que en `app.js` las peticiones apunten a:
+
+   ```js
+   const API = "http://localhost:5000";
+   ```
+3. Crea un jugador, juega, y observa cómo los datos se guardan en `game_db`.
 
 ---
 
-## 🧾 Créditos
+## ✅ Checklist de Implementación (Unidad 3)
 
-Proyecto desarrollado para el curso  
-**Construcción de Software — Unidad 2**  
-**Docente:** Rosario Osorio Contreras  
+| Tarea                              | Estado |
+| ---------------------------------- | ------ |
+| Conexión Flask ↔ MariaDB (PyMySQL) | ✅      |
+| Tablas automáticas en `game_db`    | ✅      |
+| HeidiSQL funcional y conectado     | ✅      |
+| Persistencia SQL en vez de JSON    | ✅      |
+| CRUD + Leaderboard + Historial     | ✅      |
+| Código limpio sin `storage/`       | ✅      |
+
+---
+
+## 🧠 Defensa ante el Docente
+
+> “En esta Unidad 3 migramos la persistencia de datos a una base SQL real con MariaDB.
+> Flask usa SQLAlchemy para manejar las tablas `profiles` y `scores`.
+> Cada vez que un jugador se crea o juega, se inserta una fila en la base `game_db`, visible desde HeidiSQL.
+> Ya no usamos archivos JSON, sino un sistema cliente-servidor real.”
+
+---
+
+## 📚 Curso y Docente
+
+**Curso:** Construcción de Software — Unidad 3
+**Docente:** Rosario Osorio Contreras
 **Universidad Continental — Ingeniería de Sistemas e Informática**
 
 ---
 
-## 💬 Repositorio del Proyecto
+## 🔗 Repositorio del Proyecto
 
 🔗 [Repositorio-C-de-Software](https://github.com/jasod66666-commits/Repositorio-C-de-Software)
-
----
-
-### ✅ Este README cumple con los criterios del profesor:
-
-1. Instrucciones claras para instalar y ejecutar el sistema.  
-2. Explicación funcional de la integración backend–frontend.  
-3. Listado completo de endpoints RESTful.  
-4. Identificación de roles y responsables del equipo.  
-5. Estructura paso a paso para defensa y demostración.
