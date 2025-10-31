@@ -130,6 +130,16 @@ Windows:
 .venv\Scripts\activate
 ```
 
+Si sale error:
+```bash
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+Volver a escribir
+
+```bash
+.venv\Scripts\Activate.ps1
+```
+
 ### 4️⃣ Instalar dependencias
 
 ```bash
