@@ -6,7 +6,7 @@
 |----------------------|---------|------|
 | **Rodrigo Gutiérrez Lazo** | 73247464 | 🧠 Backend principal (Flask + API REST + integración BD SQL) |
 | Jorge Roland Gutiérrez Loyola | 73050522 | 🎨 Interfaz y lógica visual (HTML, CSS, JS, UX del juego) |
-| Walter Omar Ruiz Garagundo | 73025039 | 📄 Documentación técnica, pruebas funcionales y validación de flujo |
+| Walter Omar Ruiz Garagundo | 73025039 | ----------- |
 
 ---
 
