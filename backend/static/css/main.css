@@ -1,0 +1,9 @@
+/* ===================================================================
+   ATRAPA AL COPIÓN — MAIN STYLESHEET
+   Importa todos los módulos en orden
+   =================================================================== */
+
+@import 'variables.css';   /* 1. Colores y Tema */
+@import 'base.css';        /* 2. Layout y Reset */
+@import 'components.css';  /* 3. Botones y UI */
+@import 'game.css';        /* 4. Juego y Sprites */

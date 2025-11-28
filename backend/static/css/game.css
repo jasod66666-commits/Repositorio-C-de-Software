@@ -1,0 +1,78 @@
+/* --- HUD --- */
+.game .hud { display:flex; justify-content: center; gap: 20px; margin-bottom: 15px; }
+
+.stat {
+  background: var(--accent); color: #fff !important;
+  padding: 8px 20px; border-radius: 50px;
+  font-size: 18px; font-weight: 700;
+  border: 2px solid rgba(255,255,255,0.2);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  text-shadow: 0 2px 0 rgba(0,0,0,0.1);
+}
+
+/* --- GRILLA --- */
+.grid {
+  --gap: 10px;
+  display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  gap: var(--gap);
+  background: var(--grid-bg); border: var(--grid-border);
+  border-radius: 24px; padding: 20px;
+  aspect-ratio: 1.6/1;
+}
+
+/* --- CELDAS --- */
+.cell {
+  position: relative;
+  background: var(--cell-bg);
+  border: 1px solid transparent; 
+  border-color: var(--cell-border);
+  /* Efecto 3D en borde inferior */
+  border-bottom: 4px solid rgba(0,0,0,0.2);
+  
+  border-radius: 16px; cursor: pointer; overflow: hidden;
+  box-shadow: var(--cell-shadow);
+  transition: transform 0.1s;
+}
+body.light-mode .cell { border-bottom: 5px solid #94a3b8; }
+
+.cell:hover { transform: translateY(-2px); filter: brightness(1.05); }
+.cell:active { transform: translateY(2px); border-bottom-width: 1px; }
+.cell:focus { outline: none !important; }
+
+/* Estados Especiales */
+.cell.copion {
+  background: var(--copion-bg);
+  border-color: var(--copion-border);
+  border-bottom-color: var(--copion-border);
+  box-shadow: var(--copion-glow);
+  z-index: 5;
+}
+.cell.miss { background: rgba(239,68,68,0.4); }
+
+/* --- SPRITES (CENTRADO PERFECTO) --- */
+.pixel-sprite {
+  display: block; width: 100%; height: 100%;
+  background-repeat: no-repeat;
+  
+  /* CENTRADO ABSOLUTO */
+  background-position: center center !important;
+  
+  /* TAMAÑO AJUSTADO PARA NO CORTARSE */
+  background-size: 85% !important; 
+  
+  image-rendering: pixelated;
+}
+
+/* Rutas relativas a la carpeta /static/css/ */
+.sprite-copiando { background-image: url('../assets/sprite-copiando.png'); }
+.sprite-escribiendo { background-image: url('../assets/sprite-escribiendo.png'); opacity: 0.8; }
+
+/* Animación Rastro */
+.trail {
+  position: absolute; inset: 0; pointer-events: none; z-index: 10;
+  animation: flyUp 0.8s forwards ease-out;
+}
+@keyframes flyUp { 
+  0% { opacity:1; transform: translateY(0) scale(1); }
+  100% { opacity:0; transform: translateY(-30px) scale(1.2); }
+}

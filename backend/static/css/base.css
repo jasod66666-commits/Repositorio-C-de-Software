@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+
+body {
+  font-family: 'Fredoka', sans-serif;
+  color: var(--text-main);
+  background: var(--bg-body);
+  transition: background 0.3s ease;
+}
+
+/* Layout */
+.layout {
+  display: grid; 
+  grid-template-columns: 280px 1fr 280px;
+  gap: 20px; 
+  padding: 20px;
+  max-width: 1600px; 
+  margin: 0 auto;
+}
+
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+/* Headers */
+.topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 15px 20px; 
+  background: rgba(0,0,0,0.2); backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+/* Ajuste especial para modo claro en Topbar */
+body.light-mode .topbar { background: #fff; border-bottom: 3px solid #bae6fd; }
+
+.brand-title {
+  margin: 0; font-size: clamp(24px, 4vw, 32px); font-weight: 700;
+  color: var(--primary); letter-spacing: 1px;
+}
+
+h2, h3 { margin-top: 0; color: var(--primary); font-weight: 600; }
+.divider { border: 0; border-top: 2px dashed rgba(255,255,255,0.1); margin: 20px 0; }
+body.light-mode .divider { border-color: #cbd5e1; }

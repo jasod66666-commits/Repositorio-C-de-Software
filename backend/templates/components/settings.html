@@ -1,0 +1,72 @@
+<section class="panel">
+  <h2>Configuración</h2>
+
+  <div class="form-row">
+    <label for="rows">Filas</label>
+    <input id="rows" type="text" inputmode="numeric" value="6" placeholder="Min 2" />
+  </div>
+
+  <div class="form-row">
+    <label for="cols">Columnas</label>
+    <input id="cols" type="text" inputmode="numeric" value="8" placeholder="Min 2" />
+  </div>
+
+  <div class="form-row">
+    <label for="timeInput">Tiempo (seg)</label>
+    <input id="timeInput" type="text" inputmode="numeric" value="30" placeholder="10 - 90" />
+  </div>
+
+  <div class="form-row">
+    <label for="difficulty">Dificultad</label>
+    <select id="difficulty">
+      <option value="easy">Fácil</option>
+      <option value="medium" selected>Medio</option>
+      <option value="hard">Difícil</option>
+    </select>
+  </div>
+
+  <small id="maxHint" class="hint"></small>
+  <div id="errBox" class="errors"></div>
+
+  <hr class="divider" />
+  
+  <h2>Perfil & API</h2>
+  <div class="form-row">
+    <label for="profileSelect">Perfil Activo</label>
+    <select id="profileSelect"></select>
+  </div>
+
+  <div class="form-row">
+    <label for="username">Usuario</label>
+    <input id="username" type="text" placeholder="Tu nombre" />
+  </div>
+
+  <div class="form-row">
+    <label for="email">Email</label>
+    <input id="email" type="email" placeholder="correo@ejemplo.com" />
+  </div>
+
+  <div class="form-row">
+    <label for="avatar">Avatar</label>
+    <input id="avatar" type="text" placeholder="URL o Emoji" />
+  </div>
+
+  <div class="form-row" style="display:none;">
+    <label for="apiBase">API URL</label>
+    <input id="apiBase" type="text" value="http://localhost:5000" />
+  </div>
+
+  <div class="btn-group">
+    <button id="createProfileBtn" class="btn">Guardar Perfil</button>
+  </div>
+  
+  <small id="profileStatus" class="hint"></small>
+
+  <hr class="divider" />
+  
+  <h3>Tus Estadísticas</h3>
+  <div id="statsBox" class="stats-box"></div>
+
+  <h3>Top Jugadores</h3>
+  <ol id="leaderboard" class="history"></ol>
+</section>
